@@ -1,0 +1,42 @@
+const features=[
+["✦","AI Pet Insights","Turn everyday observations and photos into useful, easy-to-understand insights about your pet."],
+["♡","Smart Journal","Keep milestones, notes, routines and memorable moments in one beautiful timeline."],
+["▣","Digital Pet Passport","Store essential pet information, vaccinations, documents and important dates in one place."],
+["◉","Memory Studio","Create stories, captions, memes and social-ready content from your favorite pet moments."],
+["⌁","Photo Analysis","Organize pet photos and prepare them for future AI-powered recognition and analysis."],
+["↗","Content & Monetization","Turn your pet's story into shareable content and build an audience around it."]
+];
+const steps=[
+["01","Create your pet profile","Add a name, photos, basic information and important dates."],
+["02","Capture everyday moments","Use the journal to record memories, routines and observations."],
+["03","Let PetAlyze help","AI turns your information into insights, stories and useful content."]
+];
+export default function Home(){
+return <main>
+<header className="border-b border-[var(--line)] bg-white/90 backdrop-blur sticky top-0 z-20"><div className="container flex h-18 items-center justify-between">
+<a href="#" className="flex items-center gap-2 font-bold text-xl"><span className="paw">🐾</span>PetAlyze</a>
+<nav className="hidden md:flex items-center gap-7 text-sm text-[var(--muted)]"><a href="#features">Features</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
+<a href="#pricing" className="rounded-full bg-[var(--ink)] px-5 py-2.5 text-sm font-semibold text-white">Start free</a>
+</div></header>
+<section className="hero-grid overflow-hidden"><div className="container grid min-h-[650px] items-center gap-12 py-20 lg:grid-cols-[1.05fr_.95fr]">
+<div><div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm shadow-sm"><span className="text-[var(--green)]">●</span>A smarter life with your pet</div>
+<h1 className="max-w-3xl text-5xl font-bold tracking-[-0.04em] sm:text-6xl lg:text-7xl">Understand your pet better with <span className="text-[var(--green)]">AI.</span></h1>
+<p className="mt-7 max-w-2xl text-lg leading-8 text-[var(--muted)]">PetAlyze brings your pet&apos;s memories, journal, digital passport and AI-powered insights together in one simple place.</p>
+<div className="mt-9 flex flex-wrap gap-3"><a href="#pricing" className="rounded-full bg-[var(--green)] px-7 py-3.5 font-semibold text-white">Start free →</a><a href="#features" className="rounded-full border border-[var(--line)] bg-white px-7 py-3.5 font-semibold">Explore features</a></div>
+<div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--muted)]"><span>✓ Free plan</span><span>✓ No credit card required</span><span>✓ Built for pet lovers</span></div></div>
+<div className="relative"><div className="card mx-auto max-w-md overflow-hidden p-5 rotate-1"><div className="rounded-3xl bg-[var(--cream)] p-6">
+<div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Today with</p><h2 className="mt-1 text-2xl font-bold">Luna 🐶</h2></div><div className="rounded-2xl bg-white px-3 py-2 text-sm">Healthy</div></div>
+<div className="mt-6 flex h-52 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-100 via-white to-sky-100 text-8xl">🐕</div>
+<div className="mt-5 grid grid-cols-3 gap-3"><div className="rounded-2xl bg-white p-3"><p className="text-xs text-[var(--muted)]">Mood</p><b>Happy</b></div><div className="rounded-2xl bg-white p-3"><p className="text-xs text-[var(--muted)]">Walks</p><b>2 / 2</b></div><div className="rounded-2xl bg-white p-3"><p className="text-xs text-[var(--muted)]">Memories</p><b>128</b></div></div>
+</div></div><div className="absolute -bottom-5 -left-2 hidden rounded-2xl bg-white p-4 shadow-xl sm:block"><p className="text-xs text-[var(--muted)]">AI story created</p><p className="mt-1 font-semibold">“Sunday adventures with Luna”</p></div></div>
+</div></section>
+<section id="features" className="container py-24"><div className="max-w-2xl"><p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">One pet. One story.</p><h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Everything your pet&apos;s digital life needs.</h2><p className="mt-5 text-lg leading-8 text-[var(--muted)]">A single home for memories, information, AI assistance and content creation.</p></div>
+<div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{features.map(([icon,title,text])=><article className="card p-7" key={title}><div className="paw">{icon}</div><h3 className="mt-6 text-xl font-bold">{title}</h3><p className="mt-3 leading-7 text-[var(--muted)]">{text}</p></article>)}</div></section>
+<section id="how" className="bg-[var(--cream)] py-24"><div className="container"><div className="text-center"><p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">How it works</p><h2 className="mt-3 text-4xl font-bold tracking-tight">Start in minutes.</h2></div>
+<div className="mx-auto mt-14 grid max-w-5xl gap-5 md:grid-cols-3">{steps.map(([num,title,text])=><article className="card bg-white p-7" key={num}><div className="text-sm font-bold text-[var(--green)]">{num}</div><h3 className="mt-8 text-xl font-bold">{title}</h3><p className="mt-3 leading-7 text-[var(--muted)]">{text}</p></article>)}</div></div></section>
+<section id="pricing" className="container py-24"><div className="mx-auto max-w-2xl text-center"><p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">Simple pricing</p><h2 className="mt-3 text-4xl font-bold tracking-tight">Start free. Upgrade when you need more.</h2></div>
+<div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2"><div className="card p-8"><p className="text-sm font-bold">Free</p><div className="mt-3 text-5xl font-bold">$0<span className="text-base font-normal text-[var(--muted)]"> / forever</span></div><ul className="mt-7 space-y-3 text-[var(--muted)]"><li>✓ 1 AI story per month</li><li>✓ Pet profile</li><li>✓ Smart journal</li><li>✓ Digital pet passport</li></ul><a href="#pricing" className="mt-8 block rounded-full border border-[var(--line)] py-3 text-center font-semibold">Get started</a></div>
+<div className="card border-2 border-[var(--green)] p-8"><div className="flex items-center justify-between"><p className="text-sm font-bold">Premium</p><span className="rounded-full bg-[var(--mint)] px-3 py-1 text-xs font-bold text-[var(--green)]">Coming next</span></div><div className="mt-3 text-5xl font-bold">$7<span className="text-base font-normal text-[var(--muted)]"> / month</span></div><ul className="mt-7 space-y-3 text-[var(--muted)]"><li>✓ More AI generation capacity</li><li>✓ Advanced AI tools</li><li>✓ Memory Studio</li><li>✓ Social content tools</li></ul><a href="#pricing" className="mt-8 block rounded-full bg-[var(--green)] py-3 text-center font-semibold text-white">Join waitlist</a></div></div></section>
+<section id="faq" className="bg-[var(--ink)] py-20 text-white"><div className="container grid gap-10 lg:grid-cols-2"><div><p className="text-sm font-bold uppercase tracking-[.18em] text-emerald-300">FAQ</p><h2 className="mt-3 text-4xl font-bold">Built around your pet.</h2></div><div className="space-y-7 text-white/80"><div><h3 className="font-bold text-white">What is PetAlyze?</h3><p className="mt-2 leading-7">A digital platform combining your pet&apos;s profile, memories, journal, passport and AI-powered content tools.</p></div><div><h3 className="font-bold text-white">Can I start for free?</h3><p className="mt-2 leading-7">Yes. The MVP starts with a free plan including one AI story per month.</p></div><div><h3 className="font-bold text-white">Can PetAlyze help create social content?</h3><p className="mt-2 leading-7">Yes. Content generation is a core product direction, designed to turn real pet moments into shareable stories and posts.</p></div></div></div></section>
+<footer className="border-t border-[var(--line)] bg-white"><div className="container flex flex-col gap-5 py-10 text-sm text-[var(--muted)] md:flex-row md:items-center md:justify-between"><div className="font-bold text-[var(--ink)]">🐾 PetAlyze</div><div>© 2026 PetAlyze. Built for pet lovers.</div><div className="flex gap-5"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></div></div></footer>
+</main>}
