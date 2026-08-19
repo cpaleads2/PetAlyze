@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function Page(){return <main className="container py-20"><Link href="/" className="font-bold text-[var(--green)]">← PetAlyze</Link><div className="card mt-8 max-w-3xl p-8"><h1 className="text-4xl font-bold">Terms of Service</h1><p className="mt-6 leading-8 text-[var(--muted)]">This MVP terms page is a placeholder. Before commercial launch, it will be replaced with the complete PetAlyze Terms of Service.</p></div></main>}

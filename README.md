@@ -1,10 +1,18 @@
-# PetAlyze MVP v0.1
+# PetAlyze MVP v0.2
 
-First working PetAlyze website.
+Working front-end MVP for PetAlyze.
 
-## Run
-Node.js 20+ required.
+## Included
+- Marketing landing page
+- Login and Sign Up demo
+- Dashboard
+- Add Pet flow
+- Pet profile
+- Smart Journal UI
+- AI Story UI + preview
+- Privacy, Terms and Contact placeholders
 
+## Run locally
 ```bash
 npm install
 npm run dev
@@ -12,4 +20,4 @@ npm run dev
 
 Open http://localhost:3000
 
-Next stages: authentication, pet profiles, dashboard, journal, AI generation, database and Tranzzo subscriptions.
+Authentication, database persistence, file upload, OpenAI calls and Tranzzo payments are not connected yet.

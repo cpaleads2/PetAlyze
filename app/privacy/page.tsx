@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function Page(){return <main className="container py-20"><Link href="/" className="font-bold text-[var(--green)]">← PetAlyze</Link><div className="card mt-8 max-w-3xl p-8"><h1 className="text-4xl font-bold">Privacy Policy</h1><p className="mt-6 leading-8 text-[var(--muted)]">This MVP privacy page is a placeholder. Before public launch, it will be replaced with the full PetAlyze Privacy Policy covering account data, pet data, uploaded media, analytics, AI processing and payment information.</p></div></main>}
