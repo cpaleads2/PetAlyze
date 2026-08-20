@@ -14,9 +14,15 @@ type Pet = {
   birth_date: string | null;
 };
 
+function monthStartIso() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
 export default function Dashboard() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [journalCount, setJournalCount] = useState(0);
+  const [storyCount, setStoryCount] = useState(0);
   const [name, setName] = useState("Pet lover");
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +34,24 @@ export default function Dashboard() {
         setName((auth.user.user_metadata?.name as string) || auth.user.email || "Pet lover");
       }
 
-      const [{ data: petData }, { count }] = await Promise.all([
-        supabase
-          .from("pets")
-          .select("id,name,species,breed,birth_date")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("journal_entries")
-          .select("*", { count: "exact", head: true }),
-      ]);
+      const [{ data: petData }, { count: journalTotal }, { count: storyTotal }] =
+        await Promise.all([
+          supabase
+            .from("pets")
+            .select("id,name,species,breed,birth_date")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("journal_entries")
+            .select("*", { count: "exact", head: true }),
+          supabase
+            .from("ai_stories")
+            .select("*", { count: "exact", head: true })
+            .gte("created_at", monthStartIso()),
+        ]);
 
       setPets(petData || []);
-      setJournalCount(count || 0);
+      setJournalCount(journalTotal || 0);
+      setStoryCount(storyTotal || 0);
       setLoading(false);
     }
 
@@ -56,7 +68,7 @@ export default function Dashboard() {
             </p>
             <h1 className="mt-1 text-3xl font-bold">Hello, {name} 👋</h1>
             <p className="mt-2 text-[var(--muted)]">
-              Your account, pets and memories are connected to Supabase.
+              Your account, pets, memories and AI stories are connected to Supabase.
             </p>
           </div>
           <Link href="/pets/new" className="btn btn-primary">+ Add pet</Link>
@@ -73,10 +85,10 @@ export default function Dashboard() {
             <p className="mt-2 text-3xl font-bold">{loading ? "…" : journalCount}</p>
           </Link>
 
-          <div className="card p-6">
+          <Link href="/ai-story" className="card p-6">
             <p className="text-sm text-[var(--muted)]">AI stories this month</p>
-            <p className="mt-2 text-3xl font-bold">0 / 1</p>
-          </div>
+            <p className="mt-2 text-3xl font-bold">{loading ? "…" : `${storyCount} / 1`}</p>
+          </Link>
         </div>
 
         <div className="mt-6 card p-6">
