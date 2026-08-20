@@ -1,2 +1,136 @@
-import Link from "next/link"; import AppShell from "@/components/app-shell";
-export default function Dashboard(){return <AppShell><div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">Demo workspace</p><h1 className="mt-1 text-3xl font-bold">Good morning 👋</h1><p className="mt-2 text-[var(--muted)]">Here's what is happening with your pet.</p></div><Link href="/pets/new" className="btn btn-primary">+ Add pet</Link></div><div className="grid gap-5 md:grid-cols-3"><div className="card p-6"><p className="text-sm text-[var(--muted)]">Pets</p><p className="mt-2 text-3xl font-bold">1</p></div><div className="card p-6"><p className="text-sm text-[var(--muted)]">Journal entries</p><p className="mt-2 text-3xl font-bold">12</p></div><div className="card p-6"><p className="text-sm text-[var(--muted)]">AI stories this month</p><p className="mt-2 text-3xl font-bold">1 / 1</p></div></div><div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_.8fr]"><div className="card p-6"><div className="flex items-center justify-between"><h2 className="text-xl font-bold">Your pet</h2><Link className="text-sm font-bold text-[var(--green)]" href="/pets/luna">View profile →</Link></div><div className="mt-5 flex items-center gap-4 rounded-2xl bg-[var(--cream)] p-5"><div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-5xl">🐕</div><div><h3 className="text-2xl font-bold">Luna</h3><p className="text-[var(--muted)]">Golden Retriever · 3 years</p><p className="mt-2 text-sm font-bold text-[var(--green)]">Healthy · Happy</p></div></div></div><div className="card p-6"><h2 className="text-xl font-bold">Quick actions</h2><div className="mt-4 grid gap-3"><Link className="rounded-2xl border border-[var(--line)] p-4 font-bold" href="/journal">📖 Add journal entry</Link><Link className="rounded-2xl border border-[var(--line)] p-4 font-bold" href="/ai-story">✨ Create AI story</Link></div></div></div></AppShell>}
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import AppShell from "@/components/app-shell";
+import AuthGuard from "@/components/auth-guard";
+import { supabase } from "@/lib/supabase/client";
+
+type Pet = {
+  id: string;
+  name: string;
+  species: string | null;
+  breed: string | null;
+  birth_date: string | null;
+};
+
+export default function Dashboard() {
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [journalCount, setJournalCount] = useState(0);
+  const [name, setName] = useState("Pet lover");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const { data: auth } = await supabase.auth.getUser();
+
+      if (auth.user) {
+        setName((auth.user.user_metadata?.name as string) || auth.user.email || "Pet lover");
+      }
+
+      const [{ data: petData }, { count }] = await Promise.all([
+        supabase
+          .from("pets")
+          .select("id,name,species,breed,birth_date")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("journal_entries")
+          .select("*", { count: "exact", head: true }),
+      ]);
+
+      setPets(petData || []);
+      setJournalCount(count || 0);
+      setLoading(false);
+    }
+
+    load();
+  }, []);
+
+  return (
+    <AuthGuard>
+      <AppShell>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">
+              Your workspace
+            </p>
+            <h1 className="mt-1 text-3xl font-bold">Hello, {name} 👋</h1>
+            <p className="mt-2 text-[var(--muted)]">
+              Your account, pets and memories are connected to Supabase.
+            </p>
+          </div>
+          <Link href="/pets/new" className="btn btn-primary">+ Add pet</Link>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          <div className="card p-6">
+            <p className="text-sm text-[var(--muted)]">Pets</p>
+            <p className="mt-2 text-3xl font-bold">{loading ? "…" : pets.length}</p>
+          </div>
+
+          <Link href="/journal" className="card p-6">
+            <p className="text-sm text-[var(--muted)]">Journal entries</p>
+            <p className="mt-2 text-3xl font-bold">{loading ? "…" : journalCount}</p>
+          </Link>
+
+          <div className="card p-6">
+            <p className="text-sm text-[var(--muted)]">AI stories this month</p>
+            <p className="mt-2 text-3xl font-bold">0 / 1</p>
+          </div>
+        </div>
+
+        <div className="mt-6 card p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Your pets</h2>
+            <Link className="text-sm font-bold text-[var(--green)]" href="/pets/new">
+              Add another →
+            </Link>
+          </div>
+
+          {loading ? (
+            <p className="mt-5 text-[var(--muted)]">Loading pets…</p>
+          ) : pets.length === 0 ? (
+            <div className="mt-5 rounded-2xl bg-[var(--cream)] p-6">
+              <div className="text-5xl">🐾</div>
+              <h3 className="mt-4 text-xl font-bold">Add your first pet</h3>
+              <p className="mt-2 text-[var(--muted)]">
+                Create a real profile and it will stay here after you close the browser.
+              </p>
+              <Link href="/pets/new" className="btn btn-primary mt-5">
+                Create pet profile
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {pets.map((pet) => (
+                <Link
+                  key={pet.id}
+                  href={`/pets/${pet.id}`}
+                  className="rounded-2xl border border-[var(--line)] p-5 hover:bg-[var(--cream)]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--mint)] text-4xl">
+                      {pet.species?.toLowerCase() === "cat"
+                        ? "🐈"
+                        : pet.species?.toLowerCase() === "bird"
+                        ? "🐦"
+                        : pet.species?.toLowerCase() === "rabbit"
+                        ? "🐇"
+                        : "🐕"}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">{pet.name}</h3>
+                      <p className="text-sm text-[var(--muted)]">
+                        {[pet.breed, pet.species].filter(Boolean).join(" · ") || "Pet profile"}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </AppShell>
+    </AuthGuard>
+  );
+}
