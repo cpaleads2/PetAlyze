@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import AppShell from "@/components/app-shell";
 import AuthGuard from "@/components/auth-guard";
 import { supabase } from "@/lib/supabase/client";
 
 type Pet = { id: string; name: string };
+
 type Entry = {
   id: string;
   title: string;
@@ -31,9 +33,13 @@ export default function JournalPage() {
   async function loadData() {
     setLoading(true);
 
-    const [{ data: petData, error: petError }, { data: entryData, error: entryError }] =
+    const [{ data: petData }, { data: entryData, error: entryError }] =
       await Promise.all([
-        supabase.from("pets").select("id,name").order("created_at", { ascending: true }),
+        supabase
+          .from("pets")
+          .select("id,name")
+          .order("created_at", { ascending: true }),
+
         supabase
           .from("journal_entries")
           .select("id,title,entry_date,category,content,pet_id,pets(name)")
@@ -41,7 +47,7 @@ export default function JournalPage() {
           .order("created_at", { ascending: false }),
       ]);
 
-    if (!petError) setPets(petData || []);
+    setPets(petData || []);
     if (!entryError) setEntries((entryData || []) as Entry[]);
     setLoading(false);
   }
@@ -97,9 +103,11 @@ export default function JournalPage() {
           <p className="text-sm font-bold uppercase tracking-[.18em] text-[var(--green)]">
             Smart Journal
           </p>
-          <h1 className="mt-1 text-3xl font-bold">Capture everyday moments.</h1>
+          <h1 className="mt-1 text-3xl font-bold">
+            Capture everyday moments.
+          </h1>
           <p className="mt-2 text-[var(--muted)]">
-            Memories saved here stay connected to your pet and your account.
+            Save a memory now and turn it into an AI Story whenever you want.
           </p>
         </div>
 
@@ -115,17 +123,33 @@ export default function JournalPage() {
               <form onSubmit={submit} className="mt-5 space-y-4">
                 <div>
                   <label className="label">Pet</label>
-                  <select name="pet_id" className="input" required defaultValue="">
-                    <option value="" disabled>Select a pet</option>
+                  <select
+                    name="pet_id"
+                    className="input"
+                    required
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      Select a pet
+                    </option>
+
                     {pets.map((pet) => (
-                      <option key={pet.id} value={pet.id}>{pet.name}</option>
+                      <option key={pet.id} value={pet.id}>
+                        {pet.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="label">Title</label>
-                  <input name="title" className="input" required maxLength={150} placeholder="A happy afternoon" />
+                  <input
+                    name="title"
+                    className="input"
+                    required
+                    maxLength={150}
+                    placeholder="A happy afternoon"
+                  />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -142,7 +166,11 @@ export default function JournalPage() {
 
                   <div>
                     <label className="label">Category</label>
-                    <select name="category" className="input" defaultValue="Memory">
+                    <select
+                      name="category"
+                      className="input"
+                      defaultValue="Memory"
+                    >
                       <option>Memory</option>
                       <option>Milestone</option>
                       <option>Health</option>
@@ -165,7 +193,9 @@ export default function JournalPage() {
                 </div>
 
                 {message && (
-                  <p className="rounded-2xl bg-[var(--cream)] p-3 text-sm">{message}</p>
+                  <p className="rounded-2xl bg-[var(--cream)] p-3 text-sm">
+                    {message}
+                  </p>
                 )}
 
                 <button
@@ -182,7 +212,9 @@ export default function JournalPage() {
           <div className="card p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Your memories</h2>
-              <span className="text-sm text-[var(--muted)]">{entries.length} entries</span>
+              <span className="text-sm text-[var(--muted)]">
+                {entries.length} entries
+              </span>
             </div>
 
             {loading ? (
@@ -190,7 +222,9 @@ export default function JournalPage() {
             ) : entries.length === 0 ? (
               <div className="mt-5 rounded-2xl bg-[var(--cream)] p-6">
                 <div className="text-4xl">📖</div>
-                <h3 className="mt-3 text-lg font-bold">Your journal starts here</h3>
+                <h3 className="mt-3 text-lg font-bold">
+                  Your journal starts here
+                </h3>
                 <p className="mt-2 text-[var(--muted)]">
                   Save the first memory and it will appear here permanently.
                 </p>
@@ -198,7 +232,10 @@ export default function JournalPage() {
             ) : (
               <div className="mt-5 space-y-4">
                 {entries.map((entry) => (
-                  <article key={entry.id} className="rounded-2xl border border-[var(--line)] p-5">
+                  <article
+                    key={entry.id}
+                    className="rounded-2xl border border-[var(--line)] p-5"
+                  >
                     <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
                       <span className="rounded-full bg-[var(--mint)] px-3 py-1 font-bold text-[var(--green)]">
                         {entry.category}
@@ -207,10 +244,23 @@ export default function JournalPage() {
                       <span>•</span>
                       <span>{getPetName(entry)}</span>
                     </div>
+
                     <h3 className="mt-3 text-xl font-bold">{entry.title}</h3>
+
                     <p className="mt-2 whitespace-pre-wrap leading-7 text-[var(--muted)]">
                       {entry.content}
                     </p>
+
+                    <div className="mt-5 border-t border-[var(--line)] pt-4">
+                      <Link
+                        href={`/ai-story?pet_id=${encodeURIComponent(
+                          entry.pet_id
+                        )}&memory=${encodeURIComponent(entry.content)}`}
+                        className="font-bold text-[var(--green)]"
+                      >
+                        ✨ Turn this memory into an AI Story →
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>
