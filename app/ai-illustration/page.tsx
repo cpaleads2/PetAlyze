@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/app-shell";
@@ -14,7 +15,7 @@ type CreationWithUrl=Creation&{signedUrl:string|null};
 function relationName(r:MediaItem["pets"]){return Array.isArray(r)?r[0]?.name||"Pet":r?.name||"Pet";}
 function modeLabel(mode:string|null){if(mode==="stylize")return "Stylize Photo";if(mode==="reimagine")return "Reimagine";return "Legacy";}
 
-export default function AIIllustrationPage(){
+  function IllustrationContent() {
   const searchParams=useSearchParams();
   const mediaId=searchParams.get("media_id")||"";
   const [media,setMedia]=useState<MediaItem|null>(null);
@@ -242,4 +243,21 @@ export default function AIIllustrationPage(){
       </div>
     </div>}
   </AppShell></AuthGuard>;
+}
+export default function AIIllustrationPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthGuard>
+          <AppShell>
+            <div className="card p-7">
+              <p className="text-[var(--muted)]">Loading AI Illustration…</p>
+            </div>
+          </AppShell>
+        </AuthGuard>
+      }
+    >
+    <IllustrationContent />
+    </Suspense>
+  );
 }

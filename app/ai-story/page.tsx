@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/app-shell";
 import AuthGuard from "@/components/auth-guard";
@@ -23,11 +24,11 @@ type Story = {
   created_at: string;
 };
 
-export default function AIStoryPage() {
-  const searchParams = useSearchParams();
-  const presetPetId = searchParams.get("pet_id") || "";
-  const presetMemory = searchParams.get("memory") || "";
-
+function AIStoryContent() {
+const searchParams = useSearchParams();
+const presetPetId = searchParams.get("pet_id") || "";
+const presetMemory = searchParams.get("memory") || "";
+  
   const [pets, setPets] = useState<Pet[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
@@ -299,5 +300,22 @@ export default function AIStoryPage() {
         </div>
       </AppShell>
     </AuthGuard>
+  );
+}
+export default function AIStoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthGuard>
+          <AppShell>F
+            <div className="card p-7">
+              <p className="text-[var(--muted)]">Loading AI Story…</p>
+            </div>
+          </AppShell>
+        </AuthGuard>
+      }
+    >
+      <AIStoryContent />
+    </Suspense>
   );
 }
