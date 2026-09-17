@@ -8,11 +8,6 @@ type StoryBody = {
   memory?: string;
 };
 
-function monthStartIso() {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-}
-
 function cleanJson(text: string) {
   const trimmed = text.trim();
   if (trimmed.startsWith("```")) {
@@ -72,23 +67,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pet and memory are required." }, { status: 400 });
     }
 
-    const { count, error: countError } = await supabase
-      .from("ai_stories")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", monthStartIso());
-
-    if (countError) {
-      return NextResponse.json({ error: countError.message }, { status: 500 });
-    }
-
-    // MVP Free plan limit: 1 successful story per calendar month.
-    if ((count || 0) >= 1) {
-      return NextResponse.json(
-        { error: "Free plan limit reached: 1 AI story per month." },
-        { status: 429 }
-      );
-    }
-
     const { data: pet, error: petError } = await supabase
       .from("pets")
       .select("id,name,species,breed,sex,birth_date,notes")
@@ -109,6 +87,46 @@ export async function POST(req: NextRequest) {
     const recentMemories = (journal || [])
       .map((entry) => `- ${entry.entry_date} [${entry.category}] ${entry.title}: ${entry.content}`)
       .join("\n");
+
+    // v0.10.0c: charge 2 credits before the paid AI call.
+    // Every handled technical failure below refunds this charge.
+    const chargeOperationKey = `story:${crypto.randomUUID()}`;
+    const refundOperationKey = `refund:${chargeOperationKey}`;
+    let creditsCharged = false;
+
+    const { data: chargeRows, error: chargeError } = await supabase.rpc(
+      "petalyze_charge_credits",
+      {
+        p_amount: 2,
+        p_operation_key: chargeOperationKey,
+        p_reference_type: "ai_story",
+        p_reference_id: petId,
+        p_metadata: { source: "ai_story", version: "v0.10.0c" },
+      }
+    );
+
+    if (chargeError) {
+      return NextResponse.json({ error: chargeError.message }, { status: 500 });
+    }
+
+    const chargeResult = Array.isArray(chargeRows) ? chargeRows[0] : chargeRows;
+    if (!chargeResult?.success) {
+      return NextResponse.json(
+        { error: "Not enough AI Credits. This story costs 2 credits." },
+        { status: 402 }
+      );
+    }
+    creditsCharged = true;
+
+    async function refundCredits(reason: string) {
+      if (!creditsCharged) return;
+      await supabase.rpc("petalyze_refund_credits", {
+        p_charge_operation_key: chargeOperationKey,
+        p_refund_operation_key: refundOperationKey,
+        p_metadata: { reason, automatic: true, version: "v0.10.0c" },
+      });
+      creditsCharged = false;
+    }
 
     const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
     const client = new OpenAI({ apiKey: openaiKey });
@@ -146,10 +164,17 @@ Requirements:
 - preserve the pet's real name and facts
 - no markdown fences`;
 
-    const response = await client.responses.create({
-      model,
-      input: prompt,
-    });
+    let response;
+    try {
+      response = await client.responses.create({
+        model,
+        input: prompt,
+      });
+    } catch (error) {
+      await refundCredits("openai_request_failed");
+      const message = error instanceof Error ? error.message : "AI generation failed.";
+      return NextResponse.json({ error: `${message} Credits were returned.` }, { status: 502 });
+    }
 
     const raw = response.output_text;
     let generated: { title: string; story: string; social_caption: string };
@@ -157,14 +182,16 @@ Requirements:
     try {
       generated = JSON.parse(cleanJson(raw));
     } catch {
+      await refundCredits("invalid_ai_json");
       return NextResponse.json(
-        { error: "AI returned an unexpected format. Please try again." },
+        { error: "AI returned an unexpected format. Please try again. Credits were returned." },
         { status: 502 }
       );
     }
 
     if (!generated.title || !generated.story || !generated.social_caption) {
-      return NextResponse.json({ error: "AI response was incomplete." }, { status: 502 });
+      await refundCredits("incomplete_ai_response");
+      return NextResponse.json({ error: "AI response was incomplete. Credits were returned." }, { status: 502 });
     }
 
     const { data: saved, error: saveError } = await supabase
@@ -183,10 +210,15 @@ Requirements:
       .single();
 
     if (saveError) {
-      return NextResponse.json({ error: saveError.message }, { status: 500 });
+      await refundCredits("story_save_failed");
+      return NextResponse.json({ error: `${saveError.message} Credits were returned.` }, { status: 500 });
     }
 
-    return NextResponse.json({ story: saved });
+    return NextResponse.json({
+      story: saved,
+      credits_charged: 2,
+      credits_remaining: chargeResult.total_credits,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown server error.";
     return NextResponse.json({ error: message }, { status: 500 });

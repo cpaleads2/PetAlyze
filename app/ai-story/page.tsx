@@ -9,6 +9,12 @@ import { supabase } from "@/lib/supabase/client";
 
 type Pet = { id: string; name: string };
 
+type CreditAccount = {
+  plan_code: string;
+  subscription_credits: number;
+  purchased_credits: number;
+};
+
 type Story = {
   id: string;
   title: string;
@@ -27,11 +33,12 @@ export default function AIStoryPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [creditAccount, setCreditAccount] = useState<CreditAccount | null>(null);
 
   async function load() {
     setLoading(true);
 
-    const [{ data: petData }, { data: storyData }] = await Promise.all([
+    const [{ data: petData }, { data: storyData }, { data: creditData }] = await Promise.all([
       supabase
         .from("pets")
         .select("id,name")
@@ -41,10 +48,16 @@ export default function AIStoryPage() {
         .from("ai_stories")
         .select("id,title,story,social_caption,created_at")
         .order("created_at", { ascending: false }),
+
+      supabase
+        .from("user_credit_accounts")
+        .select("plan_code,subscription_credits,purchased_credits")
+        .maybeSingle(),
     ]);
 
     setPets(petData || []);
     setStories(storyData || []);
+    setCreditAccount((creditData as CreditAccount | null) || null);
     setLoading(false);
   }
 
@@ -91,7 +104,8 @@ export default function AIStoryPage() {
       return;
     }
 
-    setMessage("AI story created and saved ✓");
+    const remaining = typeof data.credits_remaining === "number" ? ` · ${data.credits_remaining} credits left` : "";
+    setMessage(`AI story created and saved ✓${remaining}`);
     await load();
   }
 
@@ -111,7 +125,7 @@ export default function AIStoryPage() {
             </h1>
 
             <p className="mt-2 text-[var(--muted)]">
-              Free MVP plan: one successful AI story per calendar month.
+              AI Story costs 2 credits. Credits are returned automatically if generation fails.
             </p>
           </div>
 
@@ -122,7 +136,15 @@ export default function AIStoryPage() {
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[420px_1fr]">
           <div className="card h-fit p-6">
-            <h2 className="text-xl font-bold">Create AI story</h2>
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-xl font-bold">Create AI story</h2>
+              <div className="text-right">
+                <p className="text-xs font-bold uppercase tracking-[.12em] text-[var(--green)]">AI Credits</p>
+                <p className="mt-1 text-lg font-bold">
+                  {loading ? "…" : creditAccount ? creditAccount.subscription_credits + creditAccount.purchased_credits : "—"}
+                </p>
+              </div>
+            </div>
 
             {pets.length === 0 && !loading ? (
               <p className="mt-4 rounded-2xl bg-[var(--cream)] p-4 text-sm">
@@ -219,7 +241,7 @@ export default function AIStoryPage() {
                   type="submit"
                   className="btn btn-primary w-full"
                 >
-                  {generating ? "Creating with AI…" : "✨ Generate & save"}
+                  {generating ? "Creating with AI…" : "✨ Generate & save · 2 credits"}
                 </button>
               </form>
             )}

@@ -23,6 +23,8 @@ export default function PassportPage() {
   const [passport, setPassport] = useState<Passport|null>(null);
   const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [savingPassport, setSavingPassport] = useState(false);
   const [savingVaccination, setSavingVaccination] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,6 +40,31 @@ export default function PassportPage() {
   }
 
   useEffect(()=>{ load(); },[petId]);
+
+  async function saveProfile(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    setSavingProfile(true); setMessage("");
+
+    const {data:auth}=await supabase.auth.getUser();
+    if(!auth.user){setSavingProfile(false);setMessage("Please log in again.");return;}
+
+    const name=String(form.get("name")||"").trim();
+    if(!name){setSavingProfile(false);setMessage("Pet name is required.");return;}
+
+    const payload={
+      name,
+      species:String(form.get("species")||"").trim()||null,
+      breed:String(form.get("breed")||"").trim()||null,
+    };
+
+    const {error}=await supabase.from("pets").update(payload).eq("id",petId).eq("user_id",auth.user.id);
+    setSavingProfile(false);
+    if(error){setMessage(error.message);return;}
+    setEditingProfile(false);
+    setMessage("Pet profile saved ✓");
+    await load();
+  }
 
   async function savePassport(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -94,10 +121,28 @@ export default function PassportPage() {
           <h1 className="mt-1 text-3xl font-bold">{pet.name}</h1>
           <p className="mt-2 text-[var(--muted)]">{[pet.breed,pet.species].filter(Boolean).join(" · ")||"Pet profile"}</p>
         </div>
-        <span className="rounded-full bg-[var(--mint)] px-4 py-2 text-sm font-bold text-[var(--green)]">Saved in Supabase</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" onClick={()=>setEditingProfile(v=>!v)} className="btn btn-secondary">{editingProfile?"Cancel editing":"✏️ Edit profile"}</button>
+          <span className="rounded-full bg-[var(--mint)] px-4 py-2 text-sm font-bold text-[var(--green)]">Saved in Supabase</span>
+        </div>
       </div>
 
       {message && <p className="mt-5 rounded-2xl bg-[var(--cream)] p-4 text-sm">{message}</p>}
+
+      {editingProfile && <form onSubmit={saveProfile} className="card mt-6 p-7">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="text-2xl font-bold">Edit pet profile</h2><p className="mt-1 text-[var(--muted)]">These facts are used by PetAlyze AI as authoritative pet information.</p></div>
+        </div>
+        <div className="mt-6 grid gap-5 sm:grid-cols-3">
+          <div><label className="label">Name</label><input name="name" className="input" defaultValue={pet.name} required/></div>
+          <div><label className="label">Species</label><select name="species" className="input" defaultValue={pet.species||""}><option value="">Select species</option><option value="Dog">Dog</option><option value="Cat">Cat</option><option value="Bird">Bird</option><option value="Rabbit">Rabbit</option><option value="Hamster">Hamster</option><option value="Guinea pig">Guinea pig</option><option value="Other">Other</option></select></div>
+          <div><label className="label">Breed</label><input name="breed" className="input" defaultValue={pet.breed||""} placeholder="e.g. Labrador Retriever"/></div>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button disabled={savingProfile} className="btn btn-primary">{savingProfile?"Saving…":"Save profile"}</button>
+          <button type="button" onClick={()=>setEditingProfile(false)} className="btn btn-secondary">Cancel</button>
+        </div>
+      </form>}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_.9fr]">
         <form onSubmit={savePassport} className="card p-7">

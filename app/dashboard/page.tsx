@@ -31,6 +31,24 @@ type Story = {
   pets: { name: string } | { name: string }[] | null;
 };
 
+type CreditAccount = {
+  plan_code: "free" | "plus" | "pro";
+  subscription_credits: number;
+  purchased_credits: number;
+};
+
+const PLAN_LABELS: Record<CreditAccount["plan_code"], string> = {
+  free: "Free",
+  plus: "Plus",
+  pro: "Pro",
+};
+
+const PLAN_MONTHLY_CREDITS: Record<CreditAccount["plan_code"], number> = {
+  free: 30,
+  plus: 400,
+  pro: 800,
+};
+
 type Vaccination = {
   id: string;
   vaccine_name: string;
@@ -60,6 +78,7 @@ export default function Dashboard() {
   const [nextVaccination, setNextVaccination] = useState<Vaccination | null>(null);
   const [name, setName] = useState("Pet lover");
   const [loading, setLoading] = useState(true);
+  const [creditAccount, setCreditAccount] = useState<CreditAccount | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -73,6 +92,16 @@ export default function Dashboard() {
         );
       }
 
+      // Refresh an expired monthly credit period before reading the balance.
+      if (auth.user) {
+        const { error: refreshError } = await supabase.rpc(
+          "petalyze_refresh_credit_period"
+        );
+        if (refreshError) {
+          console.error("Credit period refresh failed:", refreshError.message);
+        }
+      }
+
       const [
         { data: petData },
         { count: journalTotal },
@@ -80,6 +109,7 @@ export default function Dashboard() {
         { data: journalData },
         { data: storyData },
         { data: vaccinationData },
+        { data: creditData },
       ] = await Promise.all([
         supabase
           .from("pets")
@@ -115,6 +145,11 @@ export default function Dashboard() {
           .gte("next_due_date", new Date().toISOString().slice(0, 10))
           .order("next_due_date", { ascending: true })
           .limit(1),
+
+        supabase
+          .from("user_credit_accounts")
+          .select("plan_code,subscription_credits,purchased_credits")
+          .maybeSingle(),
       ]);
 
       setPets(petData || []);
@@ -123,6 +158,7 @@ export default function Dashboard() {
       setLatestJournal((journalData?.[0] as JournalEntry) || null);
       setLatestStory((storyData?.[0] as Story) || null);
       setNextVaccination((vaccinationData?.[0] as Vaccination) || null);
+      setCreditAccount((creditData as CreditAccount) || null);
       setLoading(false);
     }
 
@@ -148,6 +184,42 @@ export default function Dashboard() {
           </Link>
         </div>
 
+
+        <div className="mb-6 card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-[var(--green)]">
+                Your plan
+              </p>
+              <p className="mt-2 text-2xl font-bold">
+                {loading ? "…" : PLAN_LABELS[creditAccount?.plan_code || "free"]}
+              </p>
+            </div>
+
+            <div className="sm:text-right">
+              <p className="text-sm text-[var(--muted)]">AI Credits</p>
+              <p className="mt-1 text-3xl font-bold">
+                {loading
+                  ? "…"
+                  : creditAccount
+                  ? `${creditAccount.subscription_credits + creditAccount.purchased_credits} / ${PLAN_MONTHLY_CREDITS[creditAccount.plan_code]}`
+                  : "—"}
+              </p>
+              {creditAccount && creditAccount.purchased_credits > 0 && (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Includes {creditAccount.purchased_credits} purchased credits
+                </p>
+              )}
+              <Link
+                href="/pricing"
+                className="mt-3 inline-block text-sm font-bold text-[var(--green)]"
+              >
+                View plans →
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-5 md:grid-cols-3">
           <div className="card p-6">
             <p className="text-sm text-[var(--muted)]">Pets</p>
@@ -166,7 +238,7 @@ export default function Dashboard() {
           <Link href="/ai-story" className="card p-6">
             <p className="text-sm text-[var(--muted)]">AI stories this month</p>
             <p className="mt-2 text-3xl font-bold">
-              {loading ? "…" : `${storyCount} / 1`}
+              {loading ? "…" : storyCount}
             </p>
           </Link>
         </div>
